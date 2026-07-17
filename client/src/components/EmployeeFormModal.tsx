@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { X } from "lucide-react";
 import api from "@/lib/api";
 import { Employee } from "@/lib/types";
@@ -15,6 +15,29 @@ interface Props {
 const inputClass =
   "w-full rounded-lg px-3 py-2 text-sm outline-none focus:ring-2";
 const inputStyle = { border: "1px solid var(--color-border)", background: "var(--color-bg)" };
+
+type EmployeeFormPayload = {
+  employeeId: string;
+  name: string;
+  email: string;
+  password?: string;
+  phone: string;
+  department: string;
+  designation: string;
+  salary: number;
+  joiningDate: string;
+  status: string;
+  role: string;
+  reportingManager: string | null;
+};
+
+// Pull the manager's id whether reportingManager arrived populated (an object) or as a raw id string
+const managerIdOf = (employee?: Employee | null): string => {
+  if (!employee?.reportingManager) return "";
+  return typeof employee.reportingManager === "string"
+    ? employee.reportingManager
+    : employee.reportingManager._id;
+};
 
 export default function EmployeeFormModal({ employee, onClose, onSaved }: Props) {
   const { user } = useAuth();
@@ -33,9 +56,19 @@ export default function EmployeeFormModal({ employee, onClose, onSaved }: Props)
     joiningDate: employee?.joiningDate?.slice(0, 10) || "",
     status: employee?.status || "active",
     role: employee?.role || "employee",
+    reportingManager: managerIdOf(employee),
   });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [managers, setManagers] = useState<Employee[]>([]);
+
+  // Load everyone as a potential manager, then filter out the employee being edited (can't report to self)
+  useEffect(() => {
+    api.get("/employees", { params: { limit: 100 } }).then((res) => {
+      const all: Employee[] = res.data.data;
+      setManagers(employee ? all.filter((e) => e._id !== employee._id) : all);
+    });
+  }, [employee]);
 
   const handleChange = (key: string, value: string) => {
     setForm((f) => ({ ...f, [key]: value }));
@@ -46,17 +79,30 @@ export default function EmployeeFormModal({ employee, onClose, onSaved }: Props)
     setError("");
     setSubmitting(true);
     try {
-      const payload: any = { ...form, salary: Number(form.salary) };
-      if (isEdit && !payload.password) delete payload.password;
+      const payload: EmployeeFormPayload = {
+        ...form,
+        salary: Number(form.salary),
+        reportingManager: form.reportingManager || null,
+      };
+
+      const payloadToSubmit = isEdit && !payload.password
+        ? Object.fromEntries(
+            Object.entries(payload).filter(([key]) => key !== "password")
+          ) as EmployeeFormPayload
+        : payload;
 
       if (isEdit) {
-        await api.put(`/employees/${employee!._id}`, payload);
+        await api.put(`/employees/${employee!._id}`, payloadToSubmit);
       } else {
-        await api.post("/employees", payload);
+        await api.post("/employees", payloadToSubmit);
       }
       onSaved();
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Something went wrong. Check the fields and try again.");
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "response" in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      setError(message || "Something went wrong. Check the fields and try again.");
     } finally {
       setSubmitting(false);
     }
@@ -207,6 +253,22 @@ export default function EmployeeFormModal({ employee, onClose, onSaved }: Props)
               </select>
             </Field>
           </div>
+
+          <Field label="Reporting manager">
+            <select
+              className={inputClass}
+              style={inputStyle}
+              value={form.reportingManager}
+              onChange={(e) => handleChange("reportingManager", e.target.value)}
+            >
+              <option value="">No manager (top of hierarchy)</option>
+              {managers.map((m) => (
+                <option key={m._id} value={m._id}>
+                  {m.name} — {m.designation}
+                </option>
+              ))}
+            </select>
+          </Field>
 
           {error && (
             <div
