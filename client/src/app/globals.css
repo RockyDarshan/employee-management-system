@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+:root {
+  --color-bg: #F5F6F8;
+  --color-surface: #FFFFFF;
+  --color-border: #E3E6EB;
+  --color-text: #171A21;
+  --color-text-muted: #666C78;
+  --color-primary: #2B5D5A;
+  --color-primary-dark: #1E4341;
+  --color-primary-tint: #E8F0EF;
+  --color-danger: #B3261E;
+  --color-danger-tint: #FBEAE9;
+  --color-success: #1B7A43;
+  --color-success-tint: #E7F5EC;
+  --color-warning: #B0530A;
+  --color-warning-tint: #FDF0E3;
+  --font-display: "Segoe UI", "Inter", system-ui, -apple-system, sans-serif;
+  --font-body: "Segoe UI", "Inter", system-ui, -apple-system, sans-serif;
+}
+
+.dark {
+  --color-bg: #14161A;
+  --color-surface: #1D2025;
+  --color-border: #2C3038;
+  --color-text: #EDEEF0;
+  --color-text-muted: #9AA0AC;
+  --color-primary: #4A8B87;
+  --color-primary-dark: #3A6E6B;
+  --color-primary-tint: #1E2E2C;
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+::selection {
+  background: var(--color-primary);
+  color: white;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.15s ease-out;
+}
