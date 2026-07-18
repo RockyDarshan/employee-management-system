@@ -3,7 +3,7 @@
 A full-stack Employee Management System with JWT authentication, role-based access control (RBAC), employee CRUD, and organizational hierarchy management — built for the Playstack Incorporation Full Stack Developer hiring assignment.
 
 **Live Demo:** _(add your deployed URL here if deployed)_
-**Screenshots:** see `/screenshots` folder
+**Screenshots:** see below
 
 ---
 
@@ -94,6 +94,7 @@ employee-management-system/
 │ │ └── lib/ # API client, types
 │ └── package.json
 ├── API_DOCUMENTATION.md
+|__ SCREENSHOTS
 └── README.md
 ```
 
@@ -169,6 +170,31 @@ Visit `http://localhost:3000`, log in with `admin@ems.com` / `Admin@123`.
 See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for full endpoint reference.
 
 ---
+
+---
+
+## Screenshots
+
+**Login**
+![Login](./screenshots/01-login.png)
+
+**Dashboard**
+![Dashboard](./screenshots/02-dashboard.png)
+
+**Employees List**
+![Employees](./screenshots/03-employees-list.png)
+
+**Add Employee (with reporting manager assignment)**
+![Add Employee](./screenshots/04-add-employee-form.png)
+
+**Organization Hierarchy**
+![Org Tree](./screenshots/05-organization-tree.png)
+
+**RBAC — HR cannot assign Super Admin role**
+![RBAC](./screenshots/06-rbac-role-restriction.png)
+
+**Circular Reporting Prevention**
+![Circular Check](./screenshots/07-circular-reporting-error.png)
 
 ## Key Design Decisions
 
