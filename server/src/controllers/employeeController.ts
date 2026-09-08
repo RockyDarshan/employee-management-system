@@ -73,12 +73,10 @@ export const getEmployee = async (req: AuthRequest, res: Response) => {
       req.user?.role === "employee" &&
       req.params.id !== req.user._id.toString()
     ) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "You can only view your own profile.",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "You can only view your own profile.",
+      });
     }
 
     const employee = await Employee.findById(req.params.id).populate(
@@ -105,23 +103,19 @@ export const createEmployee = async (req: AuthRequest, res: Response) => {
 
     // Only super_admin may create another super_admin
     if (body.role === "super_admin" && req.user?.role !== "super_admin") {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Only Super Admin can assign the Super Admin role.",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "Only Super Admin can assign the Super Admin role.",
+      });
     }
 
     if (body.reportingManager) {
       const managerExists = await Employee.findById(body.reportingManager);
       if (!managerExists) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "Reporting manager does not exist.",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "Reporting manager does not exist.",
+        });
       }
     }
 
@@ -132,12 +126,10 @@ export const createEmployee = async (req: AuthRequest, res: Response) => {
     return res.status(201).json({ success: true, data: safe });
   } catch (err: any) {
     if (err.code === 11000) {
-      return res
-        .status(409)
-        .json({
-          success: false,
-          message: "Employee ID or email already exists.",
-        });
+      return res.status(409).json({
+        success: false,
+        message: "Employee ID or email already exists.",
+      });
     }
     return res
       .status(500)
@@ -154,12 +146,10 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
 
     if (req.user?.role === "employee") {
       if (!isSelf) {
-        return res
-          .status(403)
-          .json({
-            success: false,
-            message: "You can only edit your own profile.",
-          });
+        return res.status(403).json({
+          success: false,
+          message: "You can only edit your own profile.",
+        });
       }
       // Employees may only edit a limited whitelist of fields on themselves
       const allowedFields = ["phone", "profileImage"];
@@ -171,36 +161,30 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
     if (req.user?.role === "hr_manager") {
       // HR cannot assign Super Admin or delete (delete handled separately)
       if (updates.role === "super_admin") {
-        return res
-          .status(403)
-          .json({
-            success: false,
-            message: "HR Manager cannot assign Super Admin role.",
-          });
+        return res.status(403).json({
+          success: false,
+          message: "HR Manager cannot assign Super Admin role.",
+        });
       }
     }
 
     if (updates.reportingManager) {
       if (updates.reportingManager === id) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "An employee cannot report to themselves.",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "An employee cannot report to themselves.",
+        });
       }
       const isCircular = await wouldCreateCircularReporting(
         id,
         updates.reportingManager,
       );
       if (isCircular) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message:
-              "This assignment would create a circular reporting structure.",
-          });
+        return res.status(400).json({
+          success: false,
+          message:
+            "This assignment would create a circular reporting structure.",
+        });
       }
     }
 
@@ -257,6 +241,9 @@ export const getDashboardStats = async (_req: AuthRequest, res: Response) => {
       Employee.countDocuments({ status: "active" }),
       Employee.countDocuments({ status: "inactive" }),
       Employee.distinct("department"),
+      Employee.aggregate([
+        { $group: { _id: "$department", count: { $sum: 1 } } },
+      ]),
     ]);
 
     return res.status(200).json({
@@ -331,31 +318,25 @@ export const updateManager = async (req: AuthRequest, res: Response) => {
 
     if (managerId) {
       if (managerId === id) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "An employee cannot report to themselves.",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "An employee cannot report to themselves.",
+        });
       }
       const managerExists = await Employee.findById(managerId);
       if (!managerExists) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "Reporting manager does not exist.",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "Reporting manager does not exist.",
+        });
       }
       const isCircular = await wouldCreateCircularReporting(id, managerId);
       if (isCircular) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message:
-              "This assignment would create a circular reporting structure.",
-          });
+        return res.status(400).json({
+          success: false,
+          message:
+            "This assignment would create a circular reporting structure.",
+        });
       }
     }
 
