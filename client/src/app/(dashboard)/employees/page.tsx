@@ -21,6 +21,17 @@ export default function EmployeesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Employee | null>(null);
 
+  const [searchInput, setSearchInput] = useState("");
+
+
+useEffect(() => {
+  const t = setTimeout(() => {
+    setSearch(searchInput);
+    setPage(1);
+  }, 400);
+  return () => clearTimeout(t);
+}, [searchInput]);
+
   const canWrite = user?.role === "super_admin" || user?.role === "hr_manager";
   const canDelete = user?.role === "super_admin";
 
@@ -75,12 +86,9 @@ export default function EmployeesPage() {
         <div className="relative flex-1 min-w-[220px]">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--color-text-muted)" }} />
           <input
-            value={search}
-            onChange={(e) => {
-              setPage(1);
-              setSearch(e.target.value);
-            }}
-            placeholder="Search by name or email…"
+  value={searchInput}
+  onChange={(e) => setSearchInput(e.target.value)}
+  placeholder="Search by name or email…"
             className="w-full pl-9 pr-3 py-2 rounded-lg text-sm outline-none"
             style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}
           />
