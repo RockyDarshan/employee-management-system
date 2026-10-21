@@ -71,13 +71,16 @@ employeeSchema.pre("save", async function (next) {
   next();
 });
 
-// Exclude soft-deleted docs from normal find queries by default
-employeeSchema.pre(/^find/, function (this: mongoose.Query<any, any>, next) {
-  if (this.getFilter().isDeleted === undefined) {
-    this.where({ isDeleted: { $ne: true } });
-  }
-  next();
-});
+// Exclude soft-deleted docs from find, count and distinct queries
+employeeSchema.pre(
+  /^(find|count|distinct)/,
+  function (this: mongoose.Query<any, any>, next) {
+    if (this.getFilter().isDeleted === undefined) {
+      this.where({ isDeleted: { $ne: true } });
+    }
+    next();
+  },
+);
 
 employeeSchema.methods.comparePassword = async function (
   candidate: string,
