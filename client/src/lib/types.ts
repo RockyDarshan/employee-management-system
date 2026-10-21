@@ -13,7 +13,10 @@ export interface Employee {
   joiningDate: string;
   status: Status;
   role: Role;
-  reportingManager: { _id: string; name: string; employeeId: string; designation: string } | string | null;
+  reportingManager:
+    | { _id: string; name: string; employeeId: string; designation: string }
+    | string
+    | null;
   profileImage: string;
   createdAt: string;
   updatedAt: string;
@@ -25,6 +28,7 @@ export interface DashboardStats {
   inactiveEmployees: number;
   departmentCount: number;
   departments: string[];
+  departmentBreakdown: { department: string; count: number }[];
 }
 
 export interface OrgNode extends Employee {

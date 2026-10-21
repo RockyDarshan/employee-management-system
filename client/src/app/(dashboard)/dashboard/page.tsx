@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
-import { DashboardStats, Employee } from "@/lib/types";
+import { DashboardStats } from "@/lib/types";
 import StatCard from "@/components/StatCard";
 import { Users, UserCheck, UserX, Building2 } from "lucide-react";
 import {
@@ -17,32 +17,19 @@ import {
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [deptCounts, setDeptCounts] = useState<{ department: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [statsRes, employeesRes] = await Promise.all([
-          api.get("/dashboard/stats"),
-          api.get("/employees?limit=100"),
-        ]);
-        setStats(statsRes.data.data);
-
-        // Build department -> headcount breakdown for the chart client-side
-        const employees: Employee[] = employeesRes.data.data;
-        const counts: Record<string, number> = {};
-        employees.forEach((e) => {
-          counts[e.department] = (counts[e.department] || 0) + 1;
-        });
-        setDeptCounts(Object.entries(counts).map(([department, count]) => ({ department, count })));
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
-
+ useEffect(() => {
+  const load = async () => {
+    try {
+      const res = await api.get("/dashboard/stats");
+      setStats(res.data.data);
+    } finally {
+      setLoading(false);
+    }
+  };
+  load();
+}, []);
   if (loading) return <p style={{ color: "var(--color-text-muted)" }}>Loading dashboard…</p>;
   if (!stats) return <p>Failed to load dashboard.</p>;
 
@@ -68,7 +55,7 @@ export default function DashboardPage() {
       >
         <h2 className="text-sm font-medium mb-4">Headcount by department</h2>
         <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={deptCounts}>
+          <BarChart data={stats.departmentBreakdown}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
             <XAxis dataKey="department" tick={{ fontSize: 12 }} />
             <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
