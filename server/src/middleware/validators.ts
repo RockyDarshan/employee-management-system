@@ -1,4 +1,4 @@
-import { body, query, validationResult } from "express-validator";
+import { body, query, param, validationResult } from "express-validator";
 import { Request, Response, NextFunction } from "express";
 
 export const handleValidation = (
@@ -59,8 +59,17 @@ export const employeeUpdateValidation = [
   handleValidation,
 ];
 
+export const idParamValidation = [
+  param("id").isMongoId().withMessage("Valid employee ID is required"),
+  handleValidation,
+];
+
 export const listQueryValidation = [
   query("page").optional().isInt({ min: 1 }),
   query("limit").optional().isInt({ min: 1, max: 100 }),
+  query("role").optional().isIn(["super_admin", "hr_manager", "employee"]),
+  query("status").optional().isIn(["active", "inactive"]),
+  query("sortBy").optional().isIn(["joiningDate", "name", "salary"]),
+  query("order").optional().isIn(["asc", "desc"]),
   handleValidation,
 ];
