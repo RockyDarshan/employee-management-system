@@ -3,26 +3,49 @@ import Employee from "../models/Employee";
 import { AuthRequest } from "../middleware/auth";
 import mongoose from "mongoose";
 
+const str = (v: unknown) => (typeof v === "string" ? v : undefined);
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const pick = (obj: Record<string, any>, keys: string[]) =>
+  Object.fromEntries(Object.entries(obj).filter(([k]) => keys.includes(k)));
+
+const CREATE_FIELDS = [
+  "employeeId",
+  "name",
+  "email",
+  "password",
+  "phone",
+  "department",
+  "designation",
+  "salary",
+  "joiningDate",
+  "role",
+  "status",
+  "reportingManager",
+  "profileImage",
+];
+const UPDATE_FIELDS = CREATE_FIELDS.filter(
+  (f) => f !== "password" && f !== "employeeId",
+);
+
 // GET /api/employees?search=&department=&role=&status=&sortBy=&order=&page=&limit=
 export const getEmployees = async (req: AuthRequest, res: Response) => {
   try {
-    const {
-      search,
-      department,
-      role,
-      status,
-      sortBy = "joiningDate",
-      order = "desc",
-      page = "1",
-      limit = "10",
-    } = req.query as Record<string, string>;
+    const search = str(req.query.search)?.trim().slice(0, 100);
+    const department = str(req.query.department);
+    const role = str(req.query.role);
+    const status = str(req.query.status);
+    const sortBy = str(req.query.sortBy) ?? "joiningDate";
+    const order = str(req.query.order) ?? "desc";
+    const page = str(req.query.page) ?? "1";
+    const limit = str(req.query.limit) ?? "10";
 
     const filter: any = {};
 
     if (search) {
+      const safe = escapeRegex(search);
       filter.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
+        { name: { $regex: safe, $options: "i" } },
+        { email: { $regex: safe, $options: "i" } },
       ];
     }
     if (department) filter.department = department;
@@ -99,7 +122,7 @@ export const getEmployee = async (req: AuthRequest, res: Response) => {
 // POST /api/employees  (super_admin, hr_manager only)
 export const createEmployee = async (req: AuthRequest, res: Response) => {
   try {
-    const body = { ...req.body };
+    const body = { ...req.body, CREATE_FIELDS };
 
     // Only super_admin may create another super_admin
     if (body.role === "super_admin" && req.user?.role !== "super_admin") {
@@ -142,8 +165,7 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const isSelf = req.user?._id.toString() === id;
-    let updates = { ...req.body };
-
+    let updates: Record<string, any> = pick(req.body, UPDATE_FIELDS);
     if (req.user?.role === "employee") {
       if (!isSelf) {
         return res.status(403).json({
@@ -159,12 +181,20 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
     }
 
     if (req.user?.role === "hr_manager") {
-      // HR cannot assign Super Admin or delete (delete handled separately)
       if (updates.role === "super_admin") {
         return res.status(403).json({
           success: false,
           message: "HR Manager cannot assign Super Admin role.",
         });
+      }
+      if (!isSelf) {
+        const target = await Employee.findById(id).select("role");
+        if (target?.role === "super_admin") {
+          return res.status(403).json({
+            success: false,
+            message: "HR Manager cannot modify a Super Admin.",
+          });
+        }
       }
     }
 
@@ -236,15 +266,21 @@ export const deleteEmployee = async (req: AuthRequest, res: Response) => {
 // GET /api/dashboard/stats
 export const getDashboardStats = async (_req: AuthRequest, res: Response) => {
   try {
-    const [total, active, inactive, departments] = await Promise.all([
+    const [total, active, inactive, byDept] = await Promise.all([
       Employee.countDocuments({}),
       Employee.countDocuments({ status: "active" }),
       Employee.countDocuments({ status: "inactive" }),
-      Employee.distinct("department"),
       Employee.aggregate([
+        { $match: { isDeleted: { $ne: true } } },
         { $group: { _id: "$department", count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
       ]),
     ]);
+
+    const departmentBreakdown = byDept.map((d) => ({
+      department: d._id as string,
+      count: d.count as number,
+    }));
 
     return res.status(200).json({
       success: true,
@@ -252,8 +288,9 @@ export const getDashboardStats = async (_req: AuthRequest, res: Response) => {
         totalEmployees: total,
         activeEmployees: active,
         inactiveEmployees: inactive,
-        departmentCount: departments.length,
-        departments,
+        departmentCount: departmentBreakdown.length,
+        departments: departmentBreakdown.map((d) => d.department),
+        departmentBreakdown,
       },
     });
   } catch (err) {
