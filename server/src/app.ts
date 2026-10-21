@@ -4,8 +4,12 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import authRoutes from "./routes/authRoutes";
 import employeeRoutes from "./routes/employeeRoutes";
+import helmet from "helmet";
 
 const app = express();
+
+app.set("trust proxy", 1);
+app.use(helmet());
 
 app.use(
   cors({
