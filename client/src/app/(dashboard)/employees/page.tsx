@@ -49,13 +49,12 @@ useEffect(() => {
     }
   }, [page, search, department, status, sortBy, order]);
 
-  useEffect(() => {
-    fetchEmployees();
-  }, [fetchEmployees]);
+  // useEffect(() => {
+  //   fetchEmployees();
+  // }, [fetchEmployees]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Soft-delete this employee? Their record is kept but marked inactive.")) return;
-    await api.delete(`/employees/${id}`);
+if (!confirm("Delete this employee? Their direct reports will be moved to their manager.")) return;    await api.delete(`/employees/${id}`);
     fetchEmployees();
   };
 

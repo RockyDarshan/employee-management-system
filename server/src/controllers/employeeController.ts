@@ -243,19 +243,39 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
 // DELETE /api/employees/:id  (super_admin only) - soft delete
 export const deleteEmployee = async (req: AuthRequest, res: Response) => {
   try {
-    const employee = await Employee.findByIdAndUpdate(
-      req.params.id,
-      { isDeleted: true, status: "inactive" },
-      { new: true },
-    );
+    const { id } = req.params;
+
+    if (req.user?._id.toString() === id) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot delete your own account.",
+      });
+    }
+
+    const employee = await Employee.findById(id).select("reportingManager");
     if (!employee) {
       return res
         .status(404)
         .json({ success: false, message: "Employee not found." });
     }
-    return res
-      .status(200)
-      .json({ success: true, message: "Employee soft-deleted." });
+
+    // Move this employee's direct reports up to their own manager
+    // (or make them top-level if there is none).
+    const moved = await Employee.updateMany(
+      { reportingManager: id },
+      { reportingManager: employee.reportingManager ?? null },
+    );
+
+    await Employee.findByIdAndUpdate(id, {
+      isDeleted: true,
+      status: "inactive",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Employee deleted.",
+      reassignedReportees: moved.modifiedCount,
+    });
   } catch (err) {
     return res
       .status(500)
