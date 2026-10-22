@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "commonjs",
+    "module": "Node16",
     "lib": ["ES2020"],
     "outDir": "./dist",
     "rootDir": "./src",
@@ -12,12 +12,7 @@
     "resolveJsonModule": true,
     "declaration": false,
     "sourceMap": true,
-    "ignoreDeprecations": "6.0",
-    "moduleResolution": "node",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    }
+    "moduleResolution": "node16"
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
